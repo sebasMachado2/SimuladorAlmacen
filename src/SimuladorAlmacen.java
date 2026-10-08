@@ -5,16 +5,16 @@ public class SimuladorAlmacen {
 
     // --- REPRESENTACION DEL ENTORNO ---
     private static String[][] entorno = {
-            { ".", "X", ".", ".", "P" },
-            { ".", "X", ".", "X", "." },
-            { ".", ".", ".", ".", "." },
-            { "P", "X", ".", "X", "." },
-            { ".", ".", ".", ".", "P" }
+            { ".", ".", ".", "P", "." },
+            { ".", "X", ".", ".", "." },
+            { ".", ".", ".", "X", "P" },
+            { ".", ".", "P", ".", "." },
+            { ".", "X", ".", ".", "." }
     };
 
     // --- ESTADO DEL AGENTE Y SIMULACION ---
     private static int filaAgente = 2;
-    private static int colAgente = 2;
+    private static int colAgente = 0;
     private static int puntuacion = 0;
 
     private static int totalPaquetes = 0;
@@ -29,8 +29,7 @@ public class SimuladorAlmacen {
     private static final String VACIA = ".";
     private static final String FUERA_TABLERO = "FUERA_DEL_TABLERO";
 
-    // El agente no ve todo el tablero; solo percibe su celda actual y las 4
-    // adyacentes.
+    // El agente no ve tod el tablero
     static class Percepcion {
         int fila;
         int col;
@@ -56,7 +55,7 @@ public class SimuladorAlmacen {
         contarPaquetesIniciales();
         visitas[filaAgente][colAgente] = 1; // Registra la celda inicial como visitada
 
-        int paso = 0;
+        int paso = 1;
 
         // Limite de acciones
         final int MAX_ACCIONES = 50;
@@ -64,8 +63,7 @@ public class SimuladorAlmacen {
         System.out.println("=== INICIO DE LA SIMULACION ===");
         mostrarEntorno(paso, "INICIO");
 
-        // Termina cuando se recogen todos los paquetes o se alcanza el limite de
-        // acciones
+        // Termina cuando se recogen todos los paquetes o se alcanza el limite de acciones
         while (quedanPaquetes() && paso < MAX_ACCIONES) {
             paso++;
 
@@ -80,12 +78,6 @@ public class SimuladorAlmacen {
 
             // Muestra la posición del agente despues de cada accion
             mostrarEntorno(paso, accion);
-
-            try {
-                Thread.sleep(300); // Pausa visual para ver el avance
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
         }
 
         System.out.println("\n=== FIN DE LA SIMULACION ===");
@@ -108,8 +100,7 @@ public class SimuladorAlmacen {
         String izquierda = obtenerContenidoCelda(filaAgente, colAgente - 1);
         String derecha = obtenerContenidoCelda(filaAgente, colAgente + 1);
 
-        // Empaqueta todas las percepciones en un objeto para pasarlo al modulo que
-        // decide
+        // Empaqueta todas las percepciones en un objeto para pasarlo al modulo que decide
         return new Percepcion(filaAgente, colAgente, actual, arriba, abajo, izquierda, derecha);
     }
 
@@ -120,8 +111,7 @@ public class SimuladorAlmacen {
             return "RECOGER";
         }
 
-        // Si el agente ve un paquete en alguna celda adyacente, se mueve directamente
-        // hacia el
+        // Si el agente ve un paquete en alguna celda adyacente, se mueve directamente hacia el
         if (p.arriba.equals(PAQUETE))
             return "ARRIBA";
         if (p.derecha.equals(PAQUETE))
@@ -131,15 +121,14 @@ public class SimuladorAlmacen {
         if (p.izquierda.equals(PAQUETE))
             return "IZQUIERDA";
 
-        // No hay paquete visible; explorar el entorno.
-        // Se descartan celdas invalidas
+        // No hay paquete visible; explorar el entorno. Se descartan celdas invalidas
         Map<String, int[]> candidatos = new LinkedHashMap<>();
         candidatos.put("ARRIBA", new int[] { p.fila - 1, p.col, esInvalida(p.arriba) ? 1 : 0 });
         candidatos.put("DERECHA", new int[] { p.fila, p.col + 1, esInvalida(p.derecha) ? 1 : 0 });
         candidatos.put("ABAJO", new int[] { p.fila + 1, p.col, esInvalida(p.abajo) ? 1 : 0 });
         candidatos.put("IZQUIERDA", new int[] { p.fila, p.col - 1, esInvalida(p.izquierda) ? 1 : 0 });
 
-        // Estrategia de exploracion: elegir la celda menos visitada.
+        // Elegir la celda menos visitada.
         String mejorAccion = "ARRIBA";
         int menorVisitas = Integer.MAX_VALUE;
 
@@ -227,8 +216,8 @@ public class SimuladorAlmacen {
             case "MOVIMIENTO": // Penalizacion leve para fomentar rutas cortas
                 puntuacion -= 1;
                 break;
-            case "FUERA_TABLERO": // Penalizacion por accion invalida (salir del almacen)
-            case "OBSTACULO": // Penalizacion por accion invalida (chocar con obstaculo)
+            case "FUERA_TABLERO":
+            case "OBSTACULO":
                 puntuacion -= 5;
                 break;
             case "TODOS_RECOLECTADOS": // Recompensa bonus por completar la misión
@@ -254,6 +243,10 @@ public class SimuladorAlmacen {
             for (int j = 0; j < entorno[i].length; j++) {
                 if (entorno[i][j].equals(PAQUETE)) {
                     totalPaquetes++;
+                } else if (entorno[i][j].equals("A")) {
+                    filaAgente = i;
+                    colAgente = j;
+                    entorno[i][j] = VACIA;
                 }
             }
         }
